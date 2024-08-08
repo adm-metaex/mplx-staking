@@ -108,7 +108,7 @@ pub async fn advance_clock_by_ts(context: &mut ProgramTestContext, ts: i64) {
 
 pub mod assert_custom_on_chain_error {
     use super::*;
-    use mplx_staking_states::error::MplStakingError;
+    use mpl_staking::error::MplStakingError;
     use std::fmt::Debug;
 
     pub trait AssertCustomOnChainErr {

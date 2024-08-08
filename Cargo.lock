@@ -1987,7 +1987,6 @@ dependencies = [
  "bytemuck",
  "env_logger",
  "log",
- "mplx-staking-states",
  "solana-program",
  "solana-program-test",
  "solana-sdk",
@@ -1995,15 +1994,6 @@ dependencies = [
  "spl-governance",
  "spl-governance-addin-api",
  "spl-token",
- "static_assertions",
-]
-
-[[package]]
-name = "mplx-staking-states"
-version = "0.0.1"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
  "static_assertions",
 ]
 

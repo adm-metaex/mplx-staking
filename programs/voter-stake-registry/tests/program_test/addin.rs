@@ -1,5 +1,5 @@
 use crate::*;
-use mplx_staking_states::state::Voter;
+use mpl_staking::Voter;
 use solana_sdk::{
     instruction::Instruction,
     pubkey::Pubkey,

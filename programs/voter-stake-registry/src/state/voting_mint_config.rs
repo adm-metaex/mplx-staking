@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use static_assertions::const_assert;
 
 /// Exchange rate for an asset that can be used to mint voting rights.
 ///

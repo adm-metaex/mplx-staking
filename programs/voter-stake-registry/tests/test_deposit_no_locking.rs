@@ -1,6 +1,6 @@
 use anchor_spl::token::TokenAccount;
 use assert_custom_on_chain_error::AssertCustomOnChainErr;
-use mplx_staking_states::{
+use mpl_staking::{
     error::MplStakingError,
     state::{LockupKind, LockupPeriod},
 };

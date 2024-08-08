@@ -1,9 +1,9 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::Mint;
-use mplx_staking_states::{
+use crate::{
     error::MplStakingError,
     state::{Registrar, VotingMintConfig},
 };
+use anchor_lang::prelude::*;
+use anchor_spl::token::Mint;
 
 // Remaining accounts must be all the token mints that have registered
 // as voting mints, including the newly registered one.

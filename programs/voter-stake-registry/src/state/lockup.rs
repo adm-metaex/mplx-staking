@@ -1,6 +1,7 @@
+use crate::borsh::{BorshDeserialize, BorshSerialize};
 use crate::error::*;
 use anchor_lang::prelude::*;
-use borsh::{BorshDeserialize, BorshSerialize};
+use static_assertions::const_assert;
 
 /// Seconds in one day.
 pub const SECS_PER_DAY: u64 = 86_400;
@@ -175,6 +176,7 @@ impl Lockup {
 #[derive(BorshDeserialize, BorshSerialize, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum LockupPeriod {
     None,
+    Test,
     Flex,
     ThreeMonths,
     SixMonths,
@@ -195,6 +197,7 @@ impl LockupPeriod {
             LockupPeriod::OneYear => SECS_PER_MONTH * 12,
             LockupPeriod::Flex => SECS_PER_DAY * 5,
             LockupPeriod::None => 0,
+            LockupPeriod::Test => 120,
         }
     }
 
@@ -205,6 +208,7 @@ impl LockupPeriod {
             LockupPeriod::SixMonths => 4,
             LockupPeriod::OneYear => 6,
             LockupPeriod::Flex => 1,
+            LockupPeriod::Test => 1,
         }
     }
 }

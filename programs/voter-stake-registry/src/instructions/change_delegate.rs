@@ -1,10 +1,9 @@
-use crate::{clock_unix_timestamp, cpi_instructions, find_mining_address};
-use anchor_lang::prelude::*;
-use mplx_staking_states::{
-    error::MplStakingError,
-    state::{Registrar, Voter},
+use crate::{
+    clock_unix_timestamp, cpi_instructions, find_mining_address, MplStakingError, Registrar, Voter,
 };
+use anchor_lang::prelude::*;
 use solana_program::clock::SECONDS_PER_DAY;
+
 pub const DELEGATE_UPDATE_DIFF_THRESHOLD: u64 = 5 * SECONDS_PER_DAY;
 
 #[derive(Accounts)]

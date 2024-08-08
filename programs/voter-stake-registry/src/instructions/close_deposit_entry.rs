@@ -1,8 +1,8 @@
-use anchor_lang::prelude::*;
-use mplx_staking_states::{
+use crate::{
     error::MplStakingError,
     state::{DepositEntry, Voter},
 };
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 pub struct CloseDepositEntry<'info> {

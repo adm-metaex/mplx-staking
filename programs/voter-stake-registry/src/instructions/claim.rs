@@ -1,9 +1,14 @@
-use crate::{borsh::BorshDeserialize, cpi_instructions};
+use crate::{borsh::BorshDeserialize, cpi_instructions, MplStakingError, Registrar};
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount};
-use mplx_staking_states::{error::MplStakingError, state::Registrar};
 use solana_program::program::get_return_data;
-use std::borrow::Borrow;
+use spl_governance::state::{
+    governance::GovernanceV2, proposal::ProposalV2, vote_record::VoteRecordV2,
+};
+use std::{borrow::Borrow, str::FromStr};
+
+pub const DAO_PUBKEY: &str = "89wVNeyqqDaWKWtS4rbunYdsxxbe5V3VRx6g8GWNMTMt";
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
@@ -34,6 +39,16 @@ pub struct Claim<'info> {
     /// therefore their PDA that should sign the CPI call
     pub registrar: AccountLoader<'info, Registrar>,
 
+    /// CHECK: Can be an arbitrary account.
+    /// Can't be Account<'_, T> because doesn't implement AnchorDeserialize
+    pub governance: UncheckedAccount<'info>,
+    /// CHECK: Can be an arbitrary account.
+    /// Can't be Account<'_, T> because doesn't implement AnchorDeserialize
+    pub proposal: UncheckedAccount<'info>,
+    /// CHECK: Can be an arbitrary account.
+    /// Can't be Account<'_, T> because doesn't implement AnchorDeserialize
+    pub vote_record: UncheckedAccount<'info>,
+
     #[account(mut)]
     pub user_reward_token_account: Account<'info, TokenAccount>,
 
@@ -54,6 +69,20 @@ pub fn claim(
     realm_governing_mint_pubkey: Pubkey,
     realm_pubkey: Pubkey,
 ) -> Result<u64> {
+    let governance =
+        GovernanceV2::deserialize(&mut &ctx.accounts.governance.data.borrow_mut()[..])?;
+    let proposal = ProposalV2::deserialize(&mut &ctx.accounts.proposal.data.borrow_mut()[..])?;
+    let vote_record =
+        VoteRecordV2::deserialize(&mut &ctx.accounts.vote_record.data.borrow_mut()[..])?;
+
+    require!(
+        realm_pubkey == Pubkey::from_str(DAO_PUBKEY).unwrap()
+            && governance.realm == realm_pubkey
+            && proposal.governance == ctx.accounts.governance.key()
+            && vote_record.governing_token_owner == *ctx.accounts.mining_owner.key,
+        MplStakingError::NoDaoInteractionFound
+    );
+
     let registrar = ctx.accounts.registrar.load()?;
 
     require!(

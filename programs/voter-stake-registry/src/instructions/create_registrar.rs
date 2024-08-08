@@ -1,7 +1,7 @@
 use crate::cpi_instructions;
+use crate::{error::MplStakingError, state::Registrar};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Mint, Token};
-use mplx_staking_states::{error::MplStakingError, state::Registrar};
 use spl_governance::state::realm;
 use std::mem::size_of;
 

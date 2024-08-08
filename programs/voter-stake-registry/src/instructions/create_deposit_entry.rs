@@ -1,12 +1,12 @@
 use crate::clock_unix_timestamp;
+use crate::{
+    error::MplStakingError,
+    state::{DepositEntry, Lockup, LockupKind, LockupPeriod, Registrar, Voter},
+};
 use anchor_lang::prelude::*;
 use anchor_spl::{
     associated_token::AssociatedToken,
     token::{Mint, Token, TokenAccount},
-};
-use mplx_staking_states::{
-    error::MplStakingError,
-    state::{DepositEntry, Lockup, LockupKind, LockupPeriod, Registrar, Voter},
 };
 
 #[derive(Accounts)]

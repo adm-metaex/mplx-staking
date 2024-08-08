@@ -1,6 +1,6 @@
+use crate::state::LockupPeriod;
 use anchor_lang::{prelude::*, Key};
 use borsh::{BorshDeserialize, BorshSerialize};
-use mplx_staking_states::state::LockupPeriod;
 use solana_program::{
     account_info::AccountInfo,
     entrypoint::ProgramResult,

@@ -1,12 +1,12 @@
 use crate::cpi_instructions;
-use anchor_lang::prelude::*;
-use anchor_spl::token::{self, CloseAccount, Token, TokenAccount, Transfer};
-use bytemuck::bytes_of_mut;
-use mplx_staking_states::{
+use crate::{
     error::MplStakingError,
     state::{Registrar, Voter},
     voter_seeds,
 };
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, CloseAccount, Token, TokenAccount, Transfer};
+use bytemuck::bytes_of_mut;
 use std::ops::DerefMut;
 
 // Remaining accounts must be all the token token accounts owned by voter, he wants to close,
