@@ -24,7 +24,7 @@ pub struct ConfigureVotingMint<'info> {
 /// exchange rate per mint.
 ///
 /// * `idx`: index of the rate to be set
-/// * `grand_authority`: The keypair that might be an authority for Grand/Clawback
+/// * `grant_authority`: The keypair that might be an authority for Grant/Clawback
 ///
 /// This instruction can be called several times for the same mint and index to
 /// change the voting mint configuration.
