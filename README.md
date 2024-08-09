@@ -1,77 +1,43 @@
 # Description
 
-Voter-stake-registry is a voter weight addin for Solana's
+MPL Staking is a deeply-modified fork of [voter-stake-registry](https://github.com/blockworks-foundation/voter-stake-registry) which is a voter weight addin for Solana's.
 [spl-governance program](https://github.com/solana-labs/solana-program-library/tree/master/governance).
+MPL Staking is highly dependent on the [MPL Rewards]() program, which is built for rewards calculations that are based on the weighted stake model with arbitrary (and configurable) modifiers.
 
-With the addin enabled, the governance realm authority can:
+The essential motivation for this addin is to provide users with the ability of staking and receiving rewards, using the DAO. Batch-minting that is provided by [Bubblegum]() is relied on that program as well.
 
-- Control which token mints can be used to vote, and at what scaling factor.
-
-  That means that tokens from mints other than the governing mint can be used
-  to vote and that their relative weight can be set.
-
-- Claw back locked tokens from user deposits where the user has enabled it.
-
-  This is intended for use with token grants. Users would not enable clawback
-  for normal deposits.
+Having the addin enabled, the realm governance receiving the possibility of:
+- Controlling which token mints can be used to vote, however scaling factor remains 1:1 that stands for deposited_tokens:voting_power.
+- Clawback operations (TBD)
+- Grant operations (TBD)
+- Slashing providers for misbehavior (TBD)
 
 Users can:
 
-- Deposit and withdraw tokens of the chosen mints to gain voting weight.
+- Deposit and withdraw tokens.
+- Lock up tokens for arbitrary ranges of periods, which gives the opportunity for being eligible for rewards when they occur. Voting power remains the same (1:1) as it was mentioned previously.
 
   When an addin is enabled, the default deposit/withdraw flow of the governing
   token mints is disabled in spl-governance. The addin adds back the ability
   to deposit and withdraw without lockup.
-
-- Lock up tokens with different vesting schedules.
-
-  The tokens will only be withdrawable once vested or the lock up has expired.
-  Locked up tokens may have extra voting weight.
-
-- Use their voting weight to vote on spl-governance proposals.
+- The tokens will only be withdrawable when the lockup period has expired, and the cooldown time has passed. Also, user can't withdraw tokens if they have votes in proposals that hasn't been ended yet.
+- Use their deposited tokens for voting on spl-governance proposals.
 
 # Development
 
 ## Rust
-* Built and developed using - rust stable(`rustc 1.66.1`)
-* Run rust based tests - `cargo test-bpf`
-* To install the typescript client, do - `yarn add @blockworks-foundation/voter-stake-registry-client`
-* usage
+* Built and developed using - `rustc 1.66.1` and `anchor 1.14.10`
+* Run rust based tests - `cargo test-spf`
 * Run `cargo +nightly fmt` before pushing your changes
-
-## Node/Typescript
-* Built and developed using - node (`v16.13.1`)
-* Usage
-```
-import { Provider, Wallet } from '@project-serum/anchor';
-import { Connection, Keypair } from '@solana/web3.js';
-import { VsrClient } from '@blockworks-foundation/voter-stake-registry-client';
-
-async function main() {
-  const options = Provider.defaultOptions();
-  const connection = new Connection('https://api.devnet.solana.com', options);
-  const wallet = new Wallet(Keypair.generate());
-  const provider = new Provider(connection, wallet, options);
-  const client = await VsrClient.connect(provider, true);
-```
-
-<img width="708" alt="image" src="https://user-images.githubusercontent.com/89031858/148725266-29459e80-623e-45c4-952d-5d9d1f0f15bc.png">
-
 
 # Deployment
 
-Users will likely want to compile their own voter-stake-registry and deploy it to an address they control.
+Users may want to compile their own mpl-staking and deploy it to an address they control.
 
 Before compiling, look at:
 - `Registrar::voting_mints`: The length of this array defines the number of configurable voting mints. Adjust as needed.
+- `const DAO_PUBKEY`: The address of this constant must be specified before the contract deployment. It specifies the address of a DAO an end user should interact with to claim rewards.
 
-## Devnet
-
-For testing purposes, an instance of voter-stake-registry is deployed on devnet:
-```
-voter-stake-registry:  4Q6WW2ouZ6V3iaNm56MTd5n2tnTm4C5fiH8miFHnAFHo
-spl-governance master: i7BqPFNUvB7yqwVeCRJHrtZVwRsZZNUJTdBm7Vg2cDb
-```
 
 # Usage Scenarios
 
@@ -79,7 +45,7 @@ spl-governance master: i7BqPFNUvB7yqwVeCRJHrtZVwRsZZNUJTdBm7Vg2cDb
 
 To start using the addin, make a governance proposal with the spl-governance
 realm authority to:
-1. Deploy an instance of the voter-stake-registry.
+1. Deploy an instance of the mpl-staking.
 2. Create a registrar for the realm with the `CreateRegistrar` instruction.
 3. Add voting token mints to the registrar by calling the `ConfigureVotingMint`
    instruction as often as desired.
@@ -88,136 +54,92 @@ realm authority to:
 
 ## Deposit and Vote Without Lockup
 
+Interaction is intended to be user friendly, so an end-user probably want a dedicated UI to interact with DAO.
+Nevertheless, it might be done manually by invoking transactions directly.
+
 1. Call `CreateVoter` on the addin (first time only). Use the same
-   voter_authority that was used for registering with spl-governance.
+   `voter_authority` that was used for registering with `spl-governance`. This action is necessary to be able to interact with the program.
 2. Call `CreateDepositEntry` for the voter with `LockupKind::None`
-   and the token mint for that tokens are to be deposited. (first time only)
-
-   This creates a new deposit entry that can be used for depositing and
-   withdrawing funds without lockup.
-3. Call `Deposit` for the voter and same deposit entry id to deposit funds.
+   and the token mint for that tokens are to be deposited (first time only).
+   `LockupKind::None` means that your tokens aren't locked and can be freely withdrawn or deposited again.
+3. Call `Deposit` to transfer tokens from your wallet into the freshly created `DepositEnty`. Now you can interact with the DAO, including voting, etc.
 4. To vote, call `UpdateVoterWeightRecord` on the addin and then call `CastVote`
-   on spl-governance in the same transaction, passing the voter weight record
-   to both.
-5. Withdraw funds with `Withdraw` once proposals have resolved.
+    on spl-governance in the same transaction, passing the voter weight record
+    to both.
+5. If the end user want to stake, then they should create one more deposit entry with `LockupKind::Constant` and  required parameters, like `lockup_period`, `amount`. Then  call `Stake`, providing "internal" indexes for the both of `DepositEntry`s.
 
-## Give Grants of Locked Tokens
-
-1. Ask the recepient for their desired address.
-2. Make a proposal to call `Grant` for depositing tokens into a new locked
-   deposit entry for their address. Use a governance that either is the realm
-   authority or the token mint's grant authority.
-3. If necessary, later make a proposal to call `Clawback` on their deposit to
-   retrieve all remaining locked tokens.
-
-## Manage Constant Maturity Deposits
-
-Constant maturity deposits are useful when there's a vote weight bonus for
-locking up tokens: With cliff or daily/monthly vested deposits the remaining
-lockup period decreases as the time of maturity approaches and thus the vote
-weight decreases over time as well.
-
-Constant maturity lockup keeps tokens at a fixed maturity. That guarantees a
-fixed vote weight, but also means they need to be manually transitioned to a
-different lockup type before they can eventually be withdrawn.
-
-Setting up a constant maturity lockup is easy:
-
-1. Create a deposit entry of `Constant` lockup type with the chosen number of
-   days.
-2. `Deposit` tokens into it.
-3. Use it to vote.
-
-If you want access to the tokens again, you need to start the unlocking process
-by either
-- changing the whole deposit entry to `Cliff` with `ResetLockup`, or
-- creating a new `Cliff` deposit entry and transfering some locked tokens from
-  your `Constant` deposit entry over with `InternalTransferLocked`.
-
-In both cases you'll need to wait for the cliff to be reached before being able
-to access the tokens again.
-
+6. Withdraw funds with `Withdraw` once proposals have resolved + unstake operation has been requested and cooldown has expired in case of staked tokens.
 
 # Instruction Overview
 
 ## Setup
 
-- [`CreateRegistrar`](programs/voter-stake-registry/src/instructions/create_registrar.rs)
+- [`CreateRegistrar`](programs/mpl-rewards/src/instructions/create_registrar.rs)
 
   Creates a Registrar account for a governance realm.
 
-- [`ConfigureVotingMint`](programs/voter-stake-registry/src/instructions/configure_voting_mint.rs)
+- [`ConfigureVotingMint`](programs/mpl-rewards/src/instructions/configure_voting_mint.rs)
 
-  Enables voting with tokens from a mint and sets the exchange rate for vote weight.
+  Enables voting with tokens from a mint and sets the set of authorities (grant/clawback/etc).
 
 ## Usage
 
-- [`CreateVoter`](programs/voter-stake-registry/src/instructions/create_voter.rs)
+- [`CreateVoter`](programs/mpl-rewards/src/instructions/create_voter.rs)
 
-  Create a new voter account for a user.
+  Create a new voter account for a user. Additionally, this function creates `Mining` account as a part of the Rewards contract. That account will store all rewards that might be payed to the user.
 
-- [`CreateDepositEntry`](programs/voter-stake-registry/src/instructions/create_deposit_entry.rs)
+- [`CreateDepositEntry`](programs/mpl-rewards/src/instructions/create_deposit_entry.rs)
 
-  Create a deposit entry on a voter. A deposit entry is where tokens from a voting mint
-  are deposited, and which may optionally have a lockup period and vesting schedule.
+  Create a deposit entry on a voter with. A deposit entry is where tokens from a voting mint
+  are deposited, and which may optionally have a lockup period (configurable via parameters that pass in).
 
-  Each voter can have multiple deposit entries.
+  Each voter can have multiple deposit entries (up to 32).
 
-- [`Deposit`](programs/voter-stake-registry/src/instructions/deposit.rs)
+- [`Claim`](programs/mpl-staking/src/instructions/claim.rs)
+  If some rewards distribution happened and an end-user had tokens staked at the moment, they receive rewards. In case there are any rewards, the usage of this instruction will transfer them to the specified address.
 
-  Add tokens to a deposit entry.
+- [`CloseDepositEntry`](programs/mpl-staking/src/instructions/close_deposit_entry.rs)
 
-- [`Withdraw`](programs/voter-stake-registry/src/instructions/withdraw.rs)
+  Close an empty deposit entry, so it can be reused for a different mint or lockup type. Deposit entries can only be closed when they don't hold any tokens.
 
-  Remove tokens from a deposit entry, either unlocked or vested.
+- [`CloseVoter`](programs/mpl-staking/src/instructions/close_voter.rs)
 
-- [`ResetLockup`](programs/voter-stake-registry/src/instructions/reset_lockup.rs)
+  Close an empty voter, reclaiming rent. CPI will be made to the rewards contract to close the mining account and reclaim rent for that account as well.
 
-  Re-lock tokens where the lockup has expired, or increase the duration of the lockup or
-  change the lockup kind.
+- [`ChangeDelegate`](programs/mpl-staking/src/instructions/change_delegate.rs)
+  User has an opportunity to stake their token through the chosen delegate. This gives a possibility to use batch minting, albeit potential rewards will be slightly reduced. (It depends on the number of Mining accounts in the pool, their weighted stakes etc.)
+  Additionally, CPI will be made to recalculated weighted staked of the delegates.
 
-- [`InternalTransferLocked`](programs/voter-stake-registry/src/instructions/internal_transfer_locked.rs)
+- [`Deposit`](programs/mpl-rewards/src/instructions/deposit.rs)
 
-  Transfer locked tokens from one deposit entry to another. Useful for splitting off a
-  chunk of a "constant" lockup deposit entry that you want to start the unlock process on.
+  Add tokens to a `DepositEntry` if the `DepositEntry` is not locked.
 
-- [`InternalTransferUnocked`](programs/voter-stake-registry/src/instructions/internal_transfer_unlocked.rs)
+- [`ExtendStake`](programs/mpl-staking/src/instructions/extend_stake.rs)
+  User may want to prolong their stakes or to stake additional money. It might be hard to achieve with the limit of 32 stakes, so each of stakes might be extended. Please, take note that stake may only be prolonged for the longer period (e.g. `ThreeMonths` to `OneYear`, the reverse operation is prohibited) and increasing staked tokens only allowed for such operation. It's impossible to lock more tokens without changing `LockupPeriod`.
 
-  Transfer unlocked tokens from one deposit entry to another. Useful for splitting off a
-  chunk to be locked again in a different deposit entry without having to withdraw and redeposit.
+- [`Stake`](programs/mpl-staking/src/instructions/extend_stake.rs)
+  This operation locks the stake up for specified amount of time specified in during creation of the `DepositEntry`. Instruction also does a CPI to the rewards program to write down increased number of stake which leads to the rewards increasing.
 
-- [`UpdateVoterWeightRecord`](programs/voter-stake-registry/src/instructions/update_voter_weight_record.rs)
+- [`UpdateVoterWeightRecord`](programs/mpl-staking/src/instructions/update_voter_weight_record.rs)
 
   Write the current voter weight to the account that spl-governance can read to
   prepare for voting.
 
-- [`CloseDepositEntry`](programs/voter-stake-registry/src/instructions/close_deposit_entry.rs)
+- [`UnlockTokens`](programs/mpl-staking/src/instructions/unlock_tokens.rs)
+  Makes a request for a deposit unlocking. It means, the call well be registered and after the cooldown period has expired, tokens are ready to be withdrawn. `UnlockTokens` operation is available immediately, though cooldown have to pass first the user is allowed to withdraw their tokens.
+  Also, this operation does a CPI to the rewards contract. That means, when used, user no longer will be accounted as a part of rewards distribution (for one selected stake, not in general).
 
-  Close an empty deposit entry, so it can be reused for a different mint or lockup type.
+- [`Withdraw`](programs/mpl-staking/src/instructions/withdraw.rs)
 
-- [`CloseVoter`](programs/voter-stake-registry/src/instructions/close_voter.rs)
-
-  Close an empty voter, reclaiming rent.
+  Remove tokens from a deposit entry of any kind. The operation will be successful only if required conditions are met.
 
 ## Special
 
-- [`Grant`](programs/voter-stake-registry/src/instructions/grant.rs)
+- [`Grant`](programs/mpl-staking/src/instructions/grant.rs) TBD
 
-  As the realm authority or mint's grant authority: create a voter (if needed), create a
-  new deposit and fund it. This instruction is intended for use with DAO proposals.
+- [`Clawback`](programs/mpl-staking/src/instructions/clawback.rs) TBD
 
-- [`Clawback`](programs/voter-stake-registry/src/instructions/clawback.rs)
-
-  As the clawback authority, claim locked tokens from a voter's deposit entry that
-  has opted-in to clawback.
-
-- [`UpdateMaxVoteWeight`](programs/voter-stake-registry/src/instructions/update_max_vote_weight.rs)
-
-  Unfinished instruction for telling spl-governance about the total maximum vote weight.
-
-- [`SetTimeOffset`](programs/voter-stake-registry/src/instructions/set_time_offset.rs)
-
-  Debug instruction for advancing time in tests. Not usable.
+- [`Slash`](programs/mpl-staking/src/instructions/slash.rs) TBD
 
 
 # License
