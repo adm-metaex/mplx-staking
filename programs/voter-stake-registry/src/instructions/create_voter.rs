@@ -55,7 +55,12 @@ pub struct CreateVoter<'info> {
     /// CHECK: mining PDA will be checked in the rewards contract
     /// PDA(["mining", mining owner <aka voter_authority in our case>, reward_pool],
     /// reward_program)
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"mining", voter_authority.key().as_ref(), reward_pool.key().as_ref()],
+        seeds::program = rewards_program.key(),
+        bump,
+    )]
     pub deposit_mining: UncheckedAccount<'info>,
 
     /// CHECK: Rewards program ID

@@ -45,7 +45,12 @@ pub struct CreateRegistrar<'info> {
     /// CHECK: any address is allowed
     /// This account is responsible for storing money for rewards
     /// PDA(["vault", reward_pool, reward_mint], reward_program)
-    #[account(mut)]
+    #[account(
+        mut,
+        seeds = [b"vault", reward_pool.key().as_ref(), realm_governing_token_mint.key().as_ref()],
+        seeds::program = rewards_program.key(),
+        bump,
+    )]
     reward_vault: UncheckedAccount<'info>,
 
     #[account(mut)]

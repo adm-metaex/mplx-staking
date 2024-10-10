@@ -620,7 +620,6 @@ impl AddinCookie {
                 voter_authority: voter_authority.pubkey(),
                 deposit_mining,
                 reward_pool: registrar.reward_pool,
-                deposit_mint: voting_mint.mint.pubkey.unwrap(),
                 sol_destination: voter_authority.pubkey(),
                 token_program: spl_token::id(),
                 rewards_program: *rewards_program,
